@@ -13,11 +13,18 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.example.SanityMod"
+      "com.sanitymod.SanityMod"
+    ],
+    "client": [
+      "com.sanitymod.SanityModClient"
     ]
   },
   "mixins": [
-    "sanitymod.mixins.json"
+    "sanitymod.mixins.json",
+    {
+      "config": "sanitymod.client.mixins.json",
+      "environment": "client"
+    }
   ],
   "depends": {
     "fabricloader": ">=0.14.22",
