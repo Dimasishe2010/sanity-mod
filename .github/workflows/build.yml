@@ -1,7 +1,6 @@
 name: build
 on: [pull_request, push]
 
-
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -9,28 +8,26 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0 # Важно! Подгружаем историю, чтобы git мог сравнить коммиты
-
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6
+          fetch-depth: 0
 
       - name: setup jdk
         uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'microsoft'
+          # Мы убираем встроенный кэш setup-java и используем специализированный ниже
 
-      - name: make gradle wrapper executable
-        run: chmod +x ./gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
+          # Это включит кэширование зависимостей, нод и локального кеша Gradle
+          cache-read-only: false 
 
       - name: build
-        run: ./gradlew build
-
-      - name: capture build artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: Artifacts
-          path: build/libs/
+        # Добавляем флаги для ускорения в CI:
+        # --no-daemon (в CI демон не нужен), --parallel (параллельная сборка)
+        run: ./gradlew build --no-daemon --parallel
 
       - name: Get diff stats
         id: diff
@@ -40,16 +37,11 @@ jobs:
             RANGE="origin/${{ github.base_ref }}...HEAD"
           else
             RANGE="${{ github.event.before }}..${{ github.sha }}"
-            # Проверка на пустой хеш (новый бранч)
             if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
               RANGE="HEAD^..HEAD"
             fi
           fi
-          
-          # Получаем статистику: файлы | изменения
           STATS=$(git diff --stat $RANGE || echo "No stats available")
-          
-          # Экранируем многострочный вывод для GitHub Output
           echo "stats<<EOF" >> $GITHUB_OUTPUT
           echo "$STATS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -60,7 +52,7 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
-          message_thread_id: ${{ secrets.TELEGRAM_THREAD_ID }}
+          message_thread_id: 5 # Хардкод ID темы "Кодовая"
           format: markdown
           message: |
             ${{ job.status == 'success' && '✅ *BUILD SUCCESS*' || '❌ *BUILD FAILED*' }}
