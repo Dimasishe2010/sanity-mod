@@ -70,22 +70,12 @@ public class ServerTickHandler {
                                 double hZ = Math.cos(yaw);
 
                                 // Выбор состояния
-                                com.sanitymod.entity.custom.MimicEntity.MimicState[] possibleStates;
-                                boolean isCave = player.getBlockPos().getY() < 50;
-                                if (isCave) {
-                                    possibleStates = new com.sanitymod.entity.custom.MimicEntity.MimicState[] {
-                                            com.sanitymod.entity.custom.MimicEntity.MimicState.STARE,
-                                            com.sanitymod.entity.custom.MimicEntity.MimicState.CHASE,
-                                            com.sanitymod.entity.custom.MimicEntity.MimicState.RUN_ACROSS,
-                                            com.sanitymod.entity.custom.MimicEntity.MimicState.BREAK_BLOCK
-                                    };
-                                } else {
-                                    possibleStates = new com.sanitymod.entity.custom.MimicEntity.MimicState[] {
-                                            com.sanitymod.entity.custom.MimicEntity.MimicState.STARE,
-                                            com.sanitymod.entity.custom.MimicEntity.MimicState.CHASE,
-                                            com.sanitymod.entity.custom.MimicEntity.MimicState.RUN_ACROSS
-                                    };
-                                }
+                                com.sanitymod.entity.custom.MimicEntity.MimicState[] possibleStates = new com.sanitymod.entity.custom.MimicEntity.MimicState[] {
+                                        com.sanitymod.entity.custom.MimicEntity.MimicState.STARE,
+                                        com.sanitymod.entity.custom.MimicEntity.MimicState.CHASE,
+                                        com.sanitymod.entity.custom.MimicEntity.MimicState.RUN_ACROSS,
+                                        com.sanitymod.entity.custom.MimicEntity.MimicState.BREAK_BLOCK
+                                };
 
                                 com.sanitymod.entity.custom.MimicEntity.MimicState chosenState = possibleStates[player
                                         .getRandom().nextInt(possibleStates.length)];
@@ -134,6 +124,10 @@ public class ServerTickHandler {
                                     mimic.refreshPositionAndAngles(spawnPos, player.getYaw(), 0);
                                     mimic.setTargetPlayer(player.getUuid());
                                     player.getWorld().spawnEntity(mimic);
+                                    com.sanitymod.SanityMod.LOGGER.info(
+                                            "Spawning Mimic in state {} for player {} at [{}, {}, {}]",
+                                            chosenState.name(), player.getName().getString(), spawnPos.getX(),
+                                            spawnPos.getY(), spawnPos.getZ());
                                 } else {
                                     // Откладываем спавн на 10 секунд
                                     mimicTimer = 3400;

@@ -68,10 +68,10 @@ public class VeinRenderer {
                 float px = (-dy / len) * (seg.thickness / 2.0f);
                 float py = (dx / len) * (seg.thickness / 2.0f);
 
-                bufferBuilder.vertex(matrix, seg.x1 - px, seg.y1 - py, 0).color(0, 0, 0, 255).next();
-                bufferBuilder.vertex(matrix, seg.x1 + px, seg.y1 + py, 0).color(0, 0, 0, 255).next();
-                bufferBuilder.vertex(matrix, currX2 + px, currY2 + py, 0).color(0, 0, 0, 255).next();
-                bufferBuilder.vertex(matrix, currX2 - px, currY2 - py, 0).color(0, 0, 0, 255).next();
+                bufferBuilder.vertex(matrix, seg.x1 - px, seg.y1 - py, 0).color(130, 0, 0, 255).next();
+                bufferBuilder.vertex(matrix, seg.x1 + px, seg.y1 + py, 0).color(130, 0, 0, 255).next();
+                bufferBuilder.vertex(matrix, currX2 + px, currY2 + py, 0).color(130, 0, 0, 255).next();
+                bufferBuilder.vertex(matrix, currX2 - px, currY2 - py, 0).color(130, 0, 0, 255).next();
             }
         }
 

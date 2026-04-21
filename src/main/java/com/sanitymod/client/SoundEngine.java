@@ -4,7 +4,6 @@ import com.sanitymod.sanity.SanityData;
 import com.sanitymod.sound.ModSounds;
 import com.sanitymod.util.IEntityDataSaver;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.sound.SoundCategory;
 
 import java.util.Random;

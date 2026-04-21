@@ -10,9 +10,9 @@ import net.minecraft.client.render.*;
 import org.joml.Matrix4f;
 
 public class SanityHudOverlay implements HudRenderCallback {
-    private int blinkTicks = 0;
-    private int maxBlinkTicks = 0;
-    private int blinkCooldown = 0;
+    public static int blinkTicks = 0;
+    public static int maxBlinkTicks = 0;
+    public static int blinkCooldown = 0;
 
     public static int jumpscareTicks = 0;
     public static int jumpscareDuration = 0;
@@ -35,15 +35,6 @@ public class SanityHudOverlay implements HudRenderCallback {
         if (jumpscareTicks > 0) {
             float progress = 1.0f - ((float) jumpscareTicks / jumpscareDuration);
             VeinRenderer.render(drawContext, width, height, progress);
-
-            // Если игра не на паузе, тикаем (HUDRender вызывается каждый кадр, поэтому мы
-            // не уменьшаем тики здесь,
-            // но для простоты можно уменьшать их тут с учетом delta. Лучше использовать
-            // клиентский тик-эвент,
-            // но пока сделаем просто уменьшение каждый кадр на 1/FPS или привязать к тику.)
-            // В ваниле HUDRenderCallback происходит каждый кадр, поэтому если просто делать
-            // --, это будет зависеть от FPS.
-            // Поэтому я добавлю метод tick() или буду считать по времени.
         }
 
         float sanity = ((IEntityDataSaver) client.player).getPersistentData().getFloat("sanity");
@@ -51,19 +42,6 @@ public class SanityHudOverlay implements HudRenderCallback {
         if (sanity > 70.0f) {
             blinkTicks = 0;
             return;
-        }
-
-        if (blinkCooldown > 0) {
-            // Чтобы blinkCooldown не зависел от FPS, мы должны обновлять его в
-            // ClientTickEvent.
-            // Но мы можем оставить как есть, он будет чуть быстрее на 144гц.
-        } else if (blinkTicks <= 0) {
-            float chance = 0.01f + ((70.0f - sanity) / 70.0f) * 0.05f;
-            if (client.player.getRandom().nextFloat() < chance) {
-                blinkTicks = 8 + (int) (((70.0f - sanity) / 70.0f) * 12);
-                maxBlinkTicks = blinkTicks;
-                blinkCooldown = 20 + client.player.getRandom().nextInt(100);
-            }
         }
 
         if (blinkTicks > 0) {
@@ -79,8 +57,30 @@ public class SanityHudOverlay implements HudRenderCallback {
         if (jumpscareTicks > 0) {
             jumpscareTicks--;
         }
-        // Чтобы моргание не зависело от FPS, мы можем перенести логику тиков сюда, но
-        // пока оставим как было, для совместимости.
+
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.player == null)
+            return;
+
+        float sanity = ((IEntityDataSaver) client.player).getPersistentData().getFloat("sanity");
+        if (sanity > 70.0f)
+            return;
+
+        if (blinkCooldown > 0) {
+            blinkCooldown--;
+        } else if (blinkTicks <= 0) {
+            // Тик происходит 20 раз в секунду. Шанс нужно адаптировать под тики.
+            float chance = 0.005f + ((70.0f - sanity) / 70.0f) * 0.02f;
+            if (client.player.getRandom().nextFloat() < chance) {
+                blinkTicks = 8 + (int) (((70.0f - sanity) / 70.0f) * 12);
+                maxBlinkTicks = blinkTicks;
+                blinkCooldown = 20 + client.player.getRandom().nextInt(100);
+            }
+        }
+
+        if (blinkTicks > 0) {
+            blinkTicks--;
+        }
     }
 
     private void drawCurvedEyelids(DrawContext drawContext, int width, int height, float progress) {
