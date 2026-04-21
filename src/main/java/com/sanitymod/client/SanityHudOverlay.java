@@ -14,6 +14,10 @@ public class SanityHudOverlay implements HudRenderCallback {
     public static int maxBlinkTicks = 0;
     public static int blinkCooldown = 0;
 
+    public static int pulsationTicks = 0;
+    public static int pulsationCooldown = 0;
+    private static final int MAX_PULSATION_TICKS = 540;
+
     public static int jumpscareTicks = 0;
     public static int jumpscareDuration = 0;
 
@@ -37,6 +41,17 @@ public class SanityHudOverlay implements HudRenderCallback {
             VeinRenderer.render(drawContext, width, height, progress);
         }
 
+        if (pulsationTicks > 0) {
+            float fadeOut = (float) pulsationTicks / MAX_PULSATION_TICKS;
+            float time = pulsationTicks + tickDelta;
+            float pulse = (float) Math.max(0.0, Math.sin(time * 0.15f));
+            float intensity = pulse * fadeOut * 0.8f;
+            
+            if (intensity > 0) {
+                drawPulsationVignette(drawContext, width, height, intensity);
+            }
+        }
+
         float sanity = ((IEntityDataSaver) client.player).getPersistentData().getFloat("sanity");
 
         if (sanity > 70.0f) {
@@ -58,11 +73,27 @@ public class SanityHudOverlay implements HudRenderCallback {
             jumpscareTicks--;
         }
 
+        if (pulsationTicks > 0) {
+            pulsationTicks--;
+        }
+        if (pulsationCooldown > 0) {
+            pulsationCooldown--;
+        }
+
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null)
             return;
 
         float sanity = ((IEntityDataSaver) client.player).getPersistentData().getFloat("sanity");
+
+        if (sanity < 40.0f && pulsationCooldown <= 0 && pulsationTicks <= 0) {
+            if (client.player.getRandom().nextFloat() < 0.002f) {
+                pulsationTicks = MAX_PULSATION_TICKS;
+                pulsationCooldown = 1200; // 60s cooldown
+                client.getSoundManager().play(net.minecraft.client.sound.PositionedSoundInstance.master(com.sanitymod.sound.ModSounds.PULSATION, 1.0F, 1.0F));
+            }
+        }
+
         if (sanity > 70.0f)
             return;
 
@@ -81,6 +112,44 @@ public class SanityHudOverlay implements HudRenderCallback {
         if (blinkTicks > 0) {
             blinkTicks--;
         }
+    }
+
+    private void drawPulsationVignette(DrawContext drawContext, int width, int height, float intensity) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder bufferBuilder = tessellator.getBuffer();
+        Matrix4f matrix = drawContext.getMatrices().peek().getPositionMatrix();
+
+        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+        
+        int alpha = (int)(intensity * 255);
+        int cw = width / 2;
+        int ch = height / 2;
+        
+        bufferBuilder.vertex(matrix, 0, 0, 0).color(100, 0, 0, alpha).next();
+        bufferBuilder.vertex(matrix, 0, ch, 0).color(100, 0, 0, 0).next();
+        bufferBuilder.vertex(matrix, width, ch, 0).color(100, 0, 0, 0).next();
+        bufferBuilder.vertex(matrix, width, 0, 0).color(100, 0, 0, alpha).next();
+
+        bufferBuilder.vertex(matrix, 0, ch, 0).color(100, 0, 0, 0).next();
+        bufferBuilder.vertex(matrix, 0, height, 0).color(100, 0, 0, alpha).next();
+        bufferBuilder.vertex(matrix, width, height, 0).color(100, 0, 0, alpha).next();
+        bufferBuilder.vertex(matrix, width, ch, 0).color(100, 0, 0, 0).next();
+
+        bufferBuilder.vertex(matrix, 0, 0, 0).color(100, 0, 0, alpha).next();
+        bufferBuilder.vertex(matrix, 0, height, 0).color(100, 0, 0, alpha).next();
+        bufferBuilder.vertex(matrix, cw, height, 0).color(100, 0, 0, 0).next();
+        bufferBuilder.vertex(matrix, cw, 0, 0).color(100, 0, 0, 0).next();
+
+        bufferBuilder.vertex(matrix, cw, 0, 0).color(100, 0, 0, 0).next();
+        bufferBuilder.vertex(matrix, cw, height, 0).color(100, 0, 0, 0).next();
+        bufferBuilder.vertex(matrix, width, height, 0).color(100, 0, 0, alpha).next();
+        bufferBuilder.vertex(matrix, width, 0, 0).color(100, 0, 0, alpha).next();
+
+        tessellator.draw();
+        RenderSystem.disableBlend();
     }
 
     private void drawCurvedEyelids(DrawContext drawContext, int width, int height, float progress) {

@@ -1,0 +1,23 @@
+{
+    "heavy_breathing": {
+        "sounds": ["sanitymod:heavy_breathing"]
+    },
+    "mimic_static": {
+        "sounds": ["sanitymod:mimic_static"]
+    },
+    "ambient_whisper": {
+        "sounds": ["sanitymod:ambient_whisper"]
+    },
+    "ambient_steps": {
+        "sounds": ["sanitymod:ambient_steps"]
+    },
+    "ambient_scrape": {
+        "sounds": ["sanitymod:ambient_scrape"]
+    },
+    "mimic_chase": {
+        "sounds": ["sanitymod:mimic_chase"]
+    },
+    "pulsation": {
+        "sounds": ["sanitymod:pulsation"]
+    }
+}

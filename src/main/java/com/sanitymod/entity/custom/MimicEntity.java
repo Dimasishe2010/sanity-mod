@@ -92,7 +92,7 @@ public class MimicEntity extends HostileEntity {
 
                 if (distance < 2.5) { // Добежал! Скример!
                     ModMessages.sendJumpscare(player, 100); // 5 секунд эффектов
-                    player.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 100, 0, false, false));
+                    player.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 300, 0, false, false)); // Темнота остается еще на 10 сек
                     disappear();
                 } else if (isLookingAt && stateTicks > 20) {
                     // Если игрок вовремя обернулся и смотрит дольше 1 сек - мимик исчезает без

@@ -23,8 +23,15 @@ public abstract class CameraMixin {
     private void onUpdate(net.minecraft.world.BlockView area, net.minecraft.entity.Entity focusedEntity,
             boolean thirdPerson, boolean inverseView, float tickDelta, CallbackInfo ci) {
         if (SanityHudOverlay.jumpscareTicks > 0) {
-            float intensity = ((float) SanityHudOverlay.jumpscareTicks / SanityHudOverlay.jumpscareDuration) * 3.0f; // Сила
-                                                                                                                     // тряски
+            float intensity = ((float) SanityHudOverlay.jumpscareTicks / SanityHudOverlay.jumpscareDuration) * 3.0f; // Сила тряски
+            float shakeYaw = this.yaw + (float) ((Math.random() - 0.5) * intensity);
+            float shakePitch = this.pitch + (float) ((Math.random() - 0.5) * intensity);
+            this.setRotation(shakeYaw, shakePitch);
+        } else if (SanityHudOverlay.pulsationTicks > 0) {
+            float fadeOut = (float) SanityHudOverlay.pulsationTicks / 540.0f;
+            float time = SanityHudOverlay.pulsationTicks + tickDelta;
+            float pulse = (float) Math.max(0.0, Math.sin(time * 0.15f));
+            float intensity = pulse * fadeOut * 1.5f; // Дрожь камеры при пульсации
             float shakeYaw = this.yaw + (float) ((Math.random() - 0.5) * intensity);
             float shakePitch = this.pitch + (float) ((Math.random() - 0.5) * intensity);
             this.setRotation(shakeYaw, shakePitch);

@@ -12,6 +12,8 @@ public class ModSounds {
     public static final SoundEvent AMBIENT_WHISPER = registerSoundEvent("ambient_whisper");
     public static final SoundEvent AMBIENT_STEPS = registerSoundEvent("ambient_steps");
     public static final SoundEvent AMBIENT_SCRAPE = registerSoundEvent("ambient_scrape");
+    public static final SoundEvent MIMIC_CHASE = registerSoundEvent("mimic_chase");
+    public static final SoundEvent PULSATION = registerSoundEvent("pulsation");
 
     private static SoundEvent registerSoundEvent(String name) {
         Identifier id = new Identifier(SanityMod.MOD_ID, name);

@@ -31,6 +31,7 @@ public class ModMessages {
             int durationTicks = buf.readInt();
             client.execute(() -> {
                 com.sanitymod.client.SanityHudOverlay.triggerJumpscare(durationTicks);
+                client.getSoundManager().play(net.minecraft.client.sound.PositionedSoundInstance.master(com.sanitymod.sound.ModSounds.MIMIC_CHASE, 1.0F, 1.0F));
             });
         });
     }
