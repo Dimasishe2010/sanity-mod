@@ -11,23 +11,22 @@ jobs:
           fetch-depth: 0
 
       - name: setup jdk
+        id: setup_jdk
         uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'microsoft'
-          # Мы убираем встроенный кэш setup-java и используем специализированный ниже
 
       - name: Setup Gradle
+        id: setup_gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: wrapper
-          # Это включит кэширование зависимостей, нод и локального кеша Gradle
-          cache-read-only: false 
 
       - name: build
-        # Добавляем флаги для ускорения в CI:
-        # --no-daemon (в CI демон не нужен), --parallel (параллельная сборка)
-        run: ./gradlew build --no-daemon --parallel
+        id: build_step
+        # 2>&1 | tee build.log — записывает всё (и ошибки) в файл и выводит в консоль
+        run: ./gradlew build --no-daemon --parallel 2>&1 | tee build.log
 
       - name: Get diff stats
         id: diff
@@ -52,19 +51,32 @@ jobs:
           TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.TELEGRAM_TO }}
           THREAD_ID: 5
-          MEMBERS: "@DaniilSivakov @Sultanchik @Raidler"
+          MEMBERS: "@DaniilSivakov @Raidler"
           STATUS: ${{ job.status == 'success' && '✅ *BUILD SUCCESS*' || '❌ *BUILD FAILED*' }}
           PUSHER: ${{ github.actor }}
           BRANCH: ${{ github.ref_name }}
           COMMIT_URL: "https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
-          STATS: ${{ steps.diff.outputs.stats }}
         run: |
-          # Получаем текст последнего коммита (%s - тема, %b - тело)
+          # 1. Определяем стадию ошибки
+          FAILED_STAGE="None"
+          if [[ "${{ steps.setup_jdk.outcome }}" == "failure" ]]; then FAILED_STAGE="JDK Setup"; fi
+          if [[ "${{ steps.setup_gradle.outcome }}" == "failure" ]]; then FAILED_STAGE="Gradle Setup"; fi
+          if [[ "${{ steps.build_step.outcome }}" == "failure" ]]; then FAILED_STAGE="Build/Tests"; fi
+          
+          # 2. Берем хвост лога, если билд упал
+          ERROR_DETAILS=""
+          if [[ "${{ job.status }}" == "failure" && -f build.log ]]; then
+            ERROR_DETAILS=$(tail -n 20 build.log)
+          fi
+
+          # 3. Текст коммита
           COMMIT_TEXT=$(git log -1 --pretty=format:"%s%n%b")
           
-          # Формируем текст сообщения
+          # 4. Формируем сообщение
           TEXT=$(cat <<EOF
           $STATUS
+          
+          📍 *Stage:* $FAILED_STAGE
           👤 *Pusher:* $PUSHER
           🌿 *Branch:* \`$BRANCH\`
           
@@ -75,16 +87,17 @@ jobs:
           
           🔗 [View on GitHub]($COMMIT_URL)
           
+          $( [[ ! -empty "$ERROR_DETAILS" ]] && echo -e "🚨 *Error Log (last lines):*\n\`\`\`text\n$ERROR_DETAILS\n\`\`\`" )
+
           🔔 *Attention:* $MEMBERS
 
           *File Changes:*
           \`\`\`text
-          $STATS
+          ${{ steps.diff.outputs.stats }}
           \`\`\`
           EOF
           )
           
-          # Отправка
           curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
             -d "chat_id=$CHAT_ID" \
             -d "message_thread_id=$THREAD_ID" \
