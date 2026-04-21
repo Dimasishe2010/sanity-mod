@@ -51,34 +51,45 @@ jobs:
           TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.TELEGRAM_TO }}
           THREAD_ID: 5
-          MEMBERS: "@DaniilSivakov @Raidler"
-          STATUS: ${{ job.status == 'success' && '✅ *BUILD SUCCESS*' || '❌ *BUILD FAILED*' }}
+          MEMBERS: "@DaniilSivakov @Sultanchik @Raidler"
+          # Учитываем статус отмены (cancelled)
+          RAW_STATUS: ${{ job.status }}
           PUSHER: ${{ github.actor }}
           BRANCH: ${{ github.ref_name }}
           COMMIT_URL: "https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
         run: |
-          # 1. Определяем стадию ошибки
+          # 1. Формируем красивый заголовок статуса
+          if [[ "$RAW_STATUS" == "success" ]]; then
+            STATUS="✅ *BUILD SUCCESS*"
+          elif [[ "$RAW_STATUS" == "cancelled" ]]; then
+            STATUS="⏹️ *BUILD CANCELLED*"
+          else
+            STATUS="❌ *BUILD FAILED*"
+          fi
+
+          # 2. Определяем стадию (ищем либо failure, либо то, что было прервано/cancelled)
           FAILED_STAGE="None"
-          if [[ "${{ steps.setup_jdk.outcome }}" == "failure" ]]; then FAILED_STAGE="JDK Setup"; fi
-          if [[ "${{ steps.setup_gradle.outcome }}" == "failure" ]]; then FAILED_STAGE="Gradle Setup"; fi
-          if [[ "${{ steps.build_step.outcome }}" == "failure" ]]; then FAILED_STAGE="Build/Tests"; fi
+          if [[ "${{ steps.setup_jdk.conclusion }}" == "failure" || "${{ steps.setup_jdk.conclusion }}" == "cancelled" ]]; then FAILED_STAGE="JDK Setup"; fi
+          if [[ "${{ steps.setup_gradle.conclusion }}" == "failure" || "${{ steps.setup_gradle.conclusion }}" == "cancelled" ]]; then FAILED_STAGE="Gradle Setup"; fi
+          if [[ "${{ steps.build_step.conclusion }}" == "failure" || "${{ steps.build_step.conclusion }}" == "cancelled" ]]; then FAILED_STAGE="Build/Tests"; fi
           
-          # 2. Формируем блок ошибки (если она есть)
+          # 3. Формируем блок логов (для отмены тоже полезно увидеть, на чем всё встало)
           ERROR_SECTION=""
-          if [[ "${{ job.status }}" == "failure" && -f build.log ]]; then
+          if [[ "$RAW_STATUS" != "success" && -f build.log ]]; then
             ERROR_DETAILS=$(tail -n 20 build.log)
             if [[ -n "$ERROR_DETAILS" ]]; then
-              ERROR_SECTION="🚨 *Error Log (last lines):*
+              TITLE=$([[ "$RAW_STATUS" == "cancelled" ]] && echo "⚠️ *Last Log before Cancel:*" || echo "🚨 *Error Log (last lines):*")
+              ERROR_SECTION="$TITLE
           \`\`\`text
           $ERROR_DETAILS
           \`\`\`"
             fi
           fi
 
-          # 3. Текст коммита
+          # 4. Текст коммита
           COMMIT_TEXT=$(git log -1 --pretty=format:"%s%n%b")
           
-          # 4. Собираем финальный текст через переменную
+          # 5. Сборка сообщения
           TEXT=$(cat <<EOF
           $STATUS
 
@@ -91,7 +102,7 @@ jobs:
           $COMMIT_TEXT
           \`\`\`
 
-          🔗 [View on GitHub] ($COMMIT_URL)
+          🔗 [View on GitHub]($COMMIT_URL)
 
           $ERROR_SECTION
 
@@ -104,7 +115,6 @@ jobs:
           EOF
           )
           
-          # 5. Отправка
           curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
             -d "chat_id=$CHAT_ID" \
             -d "message_thread_id=$THREAD_ID" \
