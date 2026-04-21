@@ -2,9 +2,9 @@
 	"required": true,
 	"package": "com.sanitymod.mixin.client",
 	"compatibilityLevel": "JAVA_17",
-	"mixins": [
-	],
+	"mixins": [],
 	"client": [
+		"CameraMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

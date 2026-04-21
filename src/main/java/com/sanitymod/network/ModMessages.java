@@ -10,9 +10,10 @@ import net.minecraft.util.Identifier;
 
 public class ModMessages {
     public static final Identifier SANITY_SYNC_ID = new Identifier(SanityMod.MOD_ID, "sanity_sync");
+    public static final Identifier JUMPSCARE_SYNC_ID = new Identifier(SanityMod.MOD_ID, "jumpscare_sync");
 
     public static void registerC2SPackets() {
-        
+
     }
 
     public static void registerS2CPackets() {
@@ -20,15 +21,29 @@ public class ModMessages {
             float sanity = buf.readFloat();
             client.execute(() -> {
                 if (client.player != null) {
-                    ((com.sanitymod.util.IEntityDataSaver) client.player).getPersistentData().putFloat("sanity", sanity);
+                    ((com.sanitymod.util.IEntityDataSaver) client.player).getPersistentData().putFloat("sanity",
+                            sanity);
                 }
             });
         });
+
+        ClientPlayNetworking.registerGlobalReceiver(JUMPSCARE_SYNC_ID, (client, handler, buf, responseSender) -> {
+            int durationTicks = buf.readInt();
+            client.execute(() -> {
+                com.sanitymod.client.SanityHudOverlay.triggerJumpscare(durationTicks);
+            });
+        });
     }
-    
+
     public static void syncSanity(float sanity, ServerPlayerEntity player) {
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeFloat(sanity);
         ServerPlayNetworking.send(player, SANITY_SYNC_ID, buf);
+    }
+
+    public static void sendJumpscare(ServerPlayerEntity player, int durationTicks) {
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeInt(durationTicks);
+        ServerPlayNetworking.send(player, JUMPSCARE_SYNC_ID, buf);
     }
 }

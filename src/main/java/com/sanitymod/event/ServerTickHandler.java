@@ -65,19 +65,57 @@ public class ServerTickHandler {
                             com.sanitymod.entity.custom.MimicEntity mimic = com.sanitymod.entity.ModEntities.MIMIC
                                     .create(player.getWorld());
                             if (mimic != null) {
-                                // Получаем горизонтальный вектор взгляда (чтобы избежать спавна в самом игроке
-                                // при взгляде вниз/вверх)
                                 float yaw = player.getYaw() * ((float) Math.PI / 180F);
                                 double hX = -Math.sin(yaw);
                                 double hZ = Math.cos(yaw);
 
-                                // Строго за спиной (вектор инвертирован)
-                                double behindX = -hX;
-                                double behindZ = -hZ;
+                                // Выбор состояния
+                                com.sanitymod.entity.custom.MimicEntity.MimicState[] possibleStates;
+                                boolean isCave = player.getBlockPos().getY() < 50;
+                                if (isCave) {
+                                    possibleStates = new com.sanitymod.entity.custom.MimicEntity.MimicState[] {
+                                            com.sanitymod.entity.custom.MimicEntity.MimicState.STARE,
+                                            com.sanitymod.entity.custom.MimicEntity.MimicState.CHASE,
+                                            com.sanitymod.entity.custom.MimicEntity.MimicState.RUN_ACROSS,
+                                            com.sanitymod.entity.custom.MimicEntity.MimicState.BREAK_BLOCK
+                                    };
+                                } else {
+                                    possibleStates = new com.sanitymod.entity.custom.MimicEntity.MimicState[] {
+                                            com.sanitymod.entity.custom.MimicEntity.MimicState.STARE,
+                                            com.sanitymod.entity.custom.MimicEntity.MimicState.CHASE,
+                                            com.sanitymod.entity.custom.MimicEntity.MimicState.RUN_ACROSS
+                                    };
+                                }
 
+                                com.sanitymod.entity.custom.MimicEntity.MimicState chosenState = possibleStates[player
+                                        .getRandom().nextInt(possibleStates.length)];
+                                mimic.setMimicState(chosenState);
+
+                                double spawnDirX, spawnDirZ;
                                 int dist = 15 + player.getRandom().nextInt(5);
-                                BlockPos spawnPos = player.getBlockPos().add((int) (behindX * dist), 0,
-                                        (int) (behindZ * dist));
+
+                                if (chosenState == com.sanitymod.entity.custom.MimicEntity.MimicState.RUN_ACROSS) {
+                                    // Спавн сбоку (перпендикулярно взгляду)
+                                    boolean left = player.getRandom().nextBoolean();
+                                    spawnDirX = left ? -hZ : hZ;
+                                    spawnDirZ = left ? hX : -hX;
+
+                                    // Точка, куда он побежит (на другую сторону)
+                                    BlockPos targetPos = player.getBlockPos().add((int) (-spawnDirX * dist), 0,
+                                            (int) (-spawnDirZ * dist));
+                                    mimic.setTargetPos(targetPos);
+                                } else {
+                                    // Строго за спиной
+                                    spawnDirX = -hX;
+                                    spawnDirZ = -hZ;
+                                }
+
+                                BlockPos spawnPos = player.getBlockPos().add((int) (spawnDirX * dist), 0,
+                                        (int) (spawnDirZ * dist));
+
+                                if (chosenState == com.sanitymod.entity.custom.MimicEntity.MimicState.BREAK_BLOCK) {
+                                    mimic.setTargetPos(spawnPos.down());
+                                }
 
                                 // Ищем свободное место (воздух) по высоте в пределах +/- 5 блоков
                                 boolean foundPos = false;
@@ -97,8 +135,7 @@ public class ServerTickHandler {
                                     mimic.setTargetPlayer(player.getUuid());
                                     player.getWorld().spawnEntity(mimic);
                                 } else {
-                                    // Если место не найдено (например в узком туннеле), откладываем спавн на 10
-                                    // секунд
+                                    // Откладываем спавн на 10 секунд
                                     mimicTimer = 3400;
                                 }
                             }

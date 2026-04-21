@@ -16,7 +16,8 @@ public class SoundEngine {
 
     public static void register() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.player == null || client.world == null) return;
+            if (client.player == null || client.world == null)
+                return;
 
             float sanity = SanityData.getSanity((IEntityDataSaver) client.player);
 
@@ -24,22 +25,22 @@ public class SoundEngine {
                 breathingTimer++;
                 // Play breathing every ~4 seconds (80 ticks) when sanity < 50
                 // Frequency increases as sanity drops
-                int threshold = (int)(40 + sanity); // At 50 sanity = 90 ticks. At 0 sanity = 40 ticks.
-                
+                int threshold = (int) (40 + sanity); // At 50 sanity = 90 ticks. At 0 sanity = 40 ticks.
+
                 if (breathingTimer >= threshold) {
                     breathingTimer = 0;
                     // Volume scales from 0.1 (at 50 sanity) to 1.0 (at 0 sanity)
                     float volume = 1.0f - (sanity / 50.0f);
-                    if (volume < 0.1f) volume = 0.1f;
-                    
+                    if (volume < 0.1f)
+                        volume = 0.1f;
+
                     client.world.playSound(
                             client.player.getX(), client.player.getY(), client.player.getZ(),
                             ModSounds.HEAVY_BREATHING,
                             SoundCategory.AMBIENT,
                             volume,
                             1.0f,
-                            false
-                    );
+                            false);
                 }
             } else {
                 breathingTimer = 0;
@@ -52,8 +53,10 @@ public class SoundEngine {
                     ambientTimer = 0;
                     int soundChoice = random.nextInt(3);
                     net.minecraft.sound.SoundEvent sound = ModSounds.AMBIENT_WHISPER;
-                    if (soundChoice == 1) sound = ModSounds.AMBIENT_STEPS;
-                    else if (soundChoice == 2) sound = ModSounds.AMBIENT_SCRAPE;
+                    if (soundChoice == 1)
+                        sound = ModSounds.AMBIENT_STEPS;
+                    else if (soundChoice == 2)
+                        sound = ModSounds.AMBIENT_SCRAPE;
 
                     float volume = 1.0f - (sanity / 30.0f);
 
@@ -63,8 +66,7 @@ public class SoundEngine {
                             SoundCategory.AMBIENT,
                             volume,
                             0.8f + random.nextFloat() * 0.4f,
-                            false
-                    );
+                            false);
                 }
             } else {
                 ambientTimer = 0;
