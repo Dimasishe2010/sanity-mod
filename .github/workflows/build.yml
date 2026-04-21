@@ -63,31 +63,37 @@ jobs:
           if [[ "${{ steps.setup_gradle.outcome }}" == "failure" ]]; then FAILED_STAGE="Gradle Setup"; fi
           if [[ "${{ steps.build_step.outcome }}" == "failure" ]]; then FAILED_STAGE="Build/Tests"; fi
           
-          # 2. Берем хвост лога, если билд упал
-          ERROR_DETAILS=""
+          # 2. Формируем блок ошибки (если она есть)
+          ERROR_SECTION=""
           if [[ "${{ job.status }}" == "failure" && -f build.log ]]; then
             ERROR_DETAILS=$(tail -n 20 build.log)
+            if [[ -n "$ERROR_DETAILS" ]]; then
+              ERROR_SECTION="🚨 *Error Log (last lines):*
+          \`\`\`text
+          $ERROR_DETAILS
+          \`\`\`"
+            fi
           fi
 
           # 3. Текст коммита
           COMMIT_TEXT=$(git log -1 --pretty=format:"%s%n%b")
           
-          # 4. Формируем сообщение
+          # 4. Собираем финальный текст через переменную
           TEXT=$(cat <<EOF
           $STATUS
-          
+
           📍 *Stage:* $FAILED_STAGE
           👤 *Pusher:* $PUSHER
           🌿 *Branch:* \`$BRANCH\`
-          
+
           📝 *Commit Message:*
           \`\`\`text
           $COMMIT_TEXT
           \`\`\`
-          
-          🔗 [View on GitHub]($COMMIT_URL)
-          
-          $( [[ ! -empty "$ERROR_DETAILS" ]] && echo -e "🚨 *Error Log (last lines):*\n\`\`\`text\n$ERROR_DETAILS\n\`\`\`" )
+
+          🔗 [View on GitHub] ($COMMIT_URL)
+
+          $ERROR_SECTION
 
           🔔 *Attention:* $MEMBERS
 
@@ -98,6 +104,7 @@ jobs:
           EOF
           )
           
+          # 5. Отправка
           curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" \
             -d "chat_id=$CHAT_ID" \
             -d "message_thread_id=$THREAD_ID" \
