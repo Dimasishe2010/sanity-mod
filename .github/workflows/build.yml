@@ -1,8 +1,3 @@
-# Automatically build the project and run any configured tests for every push
-# and submitted pull request. This can help catch issues that only occur on
-# certain platforms or Java versions, and provides a first line of defence
-# against bad commits.
-
 name: build
 on: [pull_request, push]
 
@@ -12,19 +7,68 @@ jobs:
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Важно! Подгружаем историю, чтобы git мог сравнить коммиты
+
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v6
+
       - name: setup jdk
         uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'microsoft'
+
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
+
       - name: build
         run: ./gradlew build
+
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
           name: Artifacts
           path: build/libs/
+
+      - name: Get diff stats
+        id: diff
+        if: always()
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            RANGE="origin/${{ github.base_ref }}...HEAD"
+          else
+            RANGE="${{ github.event.before }}..${{ github.sha }}"
+            # Проверка на пустой хеш (новый бранч)
+            if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
+              RANGE="HEAD^..HEAD"
+            fi
+          fi
+          
+          # Получаем статистику: файлы | изменения
+          STATS=$(git diff --stat $RANGE || echo "No stats available")
+          
+          # Экранируем многострочный вывод для GitHub Output
+          echo "stats<<EOF" >> $GITHUB_OUTPUT
+          echo "$STATS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: send telegram notification
+        uses: appleboy/telegram-action@master
+        if: always()
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message_thread_id: ${{ secrets.TELEGRAM_THREAD_ID }}
+          format: markdown
+          message: |
+            ${{ job.status == 'success' && '✅ *BUILD SUCCESS*' || '❌ *BUILD FAILED*' }}
+            
+            👤 *Pusher:* ${{ github.actor }}
+            🌿 *Branch:* `${{ github.ref_name }}`
+            📝 *Commit:* [${{ github.sha }}](${{ github.event.compare }})
+            
+            *Changed Files:*
+            ```text
+            ${{ steps.diff.outputs.stats }}
+            ```
