@@ -25,7 +25,6 @@ jobs:
 
       - name: build
         id: build_step
-        # 2>&1 | tee build.log — записывает всё (и ошибки) в файл и выводит в консоль
         run: ./gradlew build --no-daemon --parallel 2>&1 | tee build.log
 
       - name: Get diff stats
@@ -51,8 +50,7 @@ jobs:
           TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.TELEGRAM_TO }}
           THREAD_ID: 5
-          MEMBERS: "@DaniilSivakov @Sultanchik @Raidler"
-          # Учитываем статус отмены (cancelled)
+          MEMBERS: "@DaniilSivakov @Raidler"
           RAW_STATUS: ${{ job.status }}
           PUSHER: ${{ github.actor }}
           BRANCH: ${{ github.ref_name }}
