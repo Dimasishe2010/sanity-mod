@@ -1,1 +1,6 @@
-https://link.test.onlinebank.kz/appLink/obuhgalter?redirect=documentId=785142;contractRecipient=1661265;contractSender=1649630
+jdbc:postgresql://172.16.123.3:5432/document_flow_db_test
+
+grant all on schema agreement, completion_report, document_flow, e_invoice, invoice_delivery_note, public, system, ui_control to "00064250";
+grant all on all tables in schema agreement, completion_report, document_flow, e_invoice, invoice_delivery_note, public, system, ui_control to "00064250";
+ALTER DEFAULT PRIVILEGES IN SCHEMA agreement, completion_report, document_flow, e_invoice, invoice_delivery_note, public, system, ui_control
+    GRANT ALL ON TABLES TO "00064250";
